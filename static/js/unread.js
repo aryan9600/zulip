@@ -272,17 +272,10 @@ exports.unread_topic_counter = (function () {
         bucketer.del(msg_id);
     };
 
-    function str_dict() {
-        // Use this when keys are topics
-        return new FoldDict();
-    }
-
-
     self.get_counts = function () {
         const res = {};
         res.stream_unread_messages = 0;
         res.stream_count = new IntDict();  // hash by stream_id -> count
-        res.topic_count = new IntDict(); // hash of hashes (stream_id, then topic -> count)
         bucketer.each(function (per_stream_bucketer, stream_id) {
 
             // We track unread counts for streams that may be currently
@@ -294,11 +287,9 @@ exports.unread_topic_counter = (function () {
                 return;
             }
 
-            res.topic_count.set(stream_id, str_dict());
             let stream_count = 0;
             per_stream_bucketer.each(function (msgs, topic) {
                 const topic_count = msgs.count();
-                res.topic_count.get(stream_id).set(topic, topic_count);
                 if (!muting.is_topic_muted(stream_id, topic)) {
                     stream_count += topic_count;
                 }
@@ -532,7 +523,6 @@ exports.get_counts = function () {
     const topic_res = exports.unread_topic_counter.get_counts();
     res.home_unread_messages = topic_res.stream_unread_messages;
     res.stream_count = topic_res.stream_count;
-    res.topic_count = topic_res.topic_count;
 
     const pm_res = exports.unread_pm_counter.get_counts();
     res.pm_count = pm_res.pm_dict;
